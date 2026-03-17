@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
-import { collection, addDoc, doc, getDoc } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 
 import { provincias } from "./provincias";
 import { TipoVivienda, Usuario } from "@/lib/models/Usuario";
@@ -14,6 +14,7 @@ const tiposVivienda = Object.values(TipoVivienda);
 export default function RegistroPage() {
   const [tipoUsuario, setTipoUsuario] = useState("Cliente");
   const [mensaje, setMensaje] = useState("");
+  const [cargando, setCargando] = useState(false);
 
   const handleRegistro = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -23,6 +24,9 @@ export default function RegistroPage() {
       form.reportValidity();
       return;
     }
+
+    setMensaje("");
+    setCargando(true);
 
     const formData = new FormData(form);
 
@@ -37,13 +41,31 @@ export default function RegistroPage() {
     const necesidadesEspeciales = String(formData.get("necesidadesEspeciales") ?? "").trim();
     const codigoBackoffice = String(formData.get("codigoBackoffice") ?? "").trim();
 
+    try {
+      const usuariosRef = collection(db, "usuarios");
+      const correoDuplicadoQuery = query(usuariosRef, where("correo", "==", correo));
+      const correoDuplicadoSnap = await getDocs(correoDuplicadoQuery);
+      if (!correoDuplicadoSnap.empty) {
+        setMensaje("Ya existe un usuario registrado con ese correo.");
+        setCargando(false);
+        return;
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setMensaje(`No se pudo validar el correo en la base de datos: ${msg}`);
+      setCargando(false);
+      return;
+    }
+
     if (contrasena !== repetirContrasena) {
       setMensaje("Las contrasenas no coinciden.");
+      setCargando(false);
       return;
     }
 
     if (tipoUsuario === "Backoffice" && !codigoBackoffice) {
       setMensaje("Para Backoffice debes introducir el codigo de acceso.");
+      setCargando(false);
       return;
     }
 
@@ -54,6 +76,7 @@ export default function RegistroPage() {
 
         if (!configSnap.exists()) {
           setMensaje("No existe la configuracion de Backoffice en la base de datos.");
+          setCargando(false);
           return;
         }
 
@@ -69,16 +92,19 @@ export default function RegistroPage() {
 
         if (!codigoConfigurado) {
           setMensaje("El codigo de Backoffice no esta configurado en la base de datos.");
+          setCargando(false);
           return;
         }
 
         if (codigoBackoffice !== codigoConfigurado) {
           setMensaje("Codigo de administrador incorrecto. No se puede crear una cuenta Backoffice.");
+          setCargando(false);
           return;
         }
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         setMensaje(`No se pudo validar el codigo de Backoffice: ${msg}`);
+        setCargando(false);
         return;
       }
     }
@@ -99,11 +125,12 @@ export default function RegistroPage() {
         nombre: nuevoUsuario.getNombre(),
         apellidos: nuevoUsuario.getApellidos(),
         correo: nuevoUsuario.getCorreo(),
+        contrasena: contrasena,
         telefono: nuevoUsuario.getTelefono(),
         provincia: nuevoUsuario.getProvincia(),
         tipoVivienda: nuevoUsuario.getTipoVivienda(),
         necesidadesEspeciales: nuevoUsuario.getNecesidadesEspeciales(),
-        tipoUsuario,
+        tipoUsuario: tipoUsuario,
         creadoEn: new Date().toISOString(),
       });
       setMensaje(`Cuenta creada correctamente para ${nuevoUsuario.getNombre()}.`);
@@ -112,6 +139,8 @@ export default function RegistroPage() {
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setMensaje(`Error al guardar en la base de datos: ${msg}`);
+    } finally {
+      setCargando(false);
     }
   };
 
@@ -296,8 +325,12 @@ export default function RegistroPage() {
             {mensaje ? <p className="text-sm font-medium text-slate-700">{mensaje}</p> : null}
 
             <div className="flex flex-col gap-3 pt-2 sm:flex-row">
-              <button type="submit" className="rounded-2xl bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
-                Crear cuenta
+              <button
+                type="submit"
+                disabled={cargando}
+                className="rounded-2xl bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {cargando ? "Creando cuenta..." : "Crear cuenta"}
               </button>
               <Link
                 href="/iniciar-sesion"

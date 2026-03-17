@@ -1,30 +1,95 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
-import ServicioMeteorologia from '@/lib/services/ServicioMeteorologia';
-import { IAData } from '@/lib/services/ServicioIA';
-import AICard from '@/lib/UI/AICard';
+import ServicioMeteorologia from "@/lib/services/ServicioMeteorologia";
+import { IAData } from "@/lib/services/ServicioIA";
+import AICard from "@/lib/UI/AICard";
 import WeatherCard from "@/lib/UI/WeatherCard";
-import { TipoVivienda, Usuario } from "@/lib/models/Usuario";
+import { TipoVivienda } from "@/lib/models/Usuario";
 
-const usuario = "Lucia";
-const zona = "Madrid";
+const dataInicial: IAData = {
+  lugar: "--",
+  tmed: "--",
+  tmax: "--",
+  tmin: "--",
+  prec: "--",
+  humedadMedia: "--",
+  tipoVivienda: TipoVivienda.Piso,
+  necesidadesEspeciales: ""
+};
 
+export default function ClientePage() {
+  const router = useRouter();
+  const [autorizado, setAutorizado] = useState(false);
+  const [nombreUsuario, setNombreUsuario] = useState("Usuario");
+  const [zona, setZona] = useState("--");
+  const [dataIA, setDataIA] = useState<IAData>(dataInicial);
 
-export default async function ClientePage() {
+  useEffect(() => {
+    const cargarVista = async () => {
+      const sesionRaw = sessionStorage.getItem("hackatonSession");
+      if (!sesionRaw) {
+        router.replace("/iniciar-sesion");
+        return;
+      }
 
-  const rawData = await ServicioMeteorologia();
+      let sesion: {
+        nombre?: string;
+        tipoUsuario?: string;
+      };
+      try {
+        sesion = JSON.parse(sesionRaw) as { nombre?: string; tipoUsuario?: string };
+      } catch {
+        sessionStorage.removeItem("hackatonSession");
+        router.replace("/iniciar-sesion");
+        return;
+      }
 
+      if (sesion.tipoUsuario === "Backoffice") {
+        router.replace("/backoffice");
+        return;
+      }
 
-  const dataIA: IAData = {
-    lugar: rawData.nombre,
-    tmed: rawData.tmed,
-    tmax: rawData.tmax,
-    tmin: rawData.tmin,
-    prec: rawData.prec,
-    humedadMedia: rawData.hrMedia,
-    tipoVivienda: TipoVivienda.Caravana,
-    necesidadesEspeciales: "Movilidad reducida y sensibilidad al frío"
-    }
+      if (sesion.tipoUsuario !== "Cliente") {
+        sessionStorage.removeItem("hackatonSession");
+        router.replace("/iniciar-sesion");
+        return;
+      }
+
+      setNombreUsuario((sesion.nombre ?? "Usuario").trim() || "Usuario");
+
+      const rawData = await ServicioMeteorologia();
+      if (rawData) {
+        setDataIA({
+          lugar: rawData.nombre ?? "--",
+          tmed: rawData.tmed ?? "--",
+          tmax: rawData.tmax ?? "--",
+          tmin: rawData.tmin ?? "--",
+          prec: rawData.prec ?? "--",
+          humedadMedia: rawData.hrMedia ?? "--",
+          tipoVivienda: TipoVivienda.Piso,
+          necesidadesEspeciales: ""
+        });
+        setZona(rawData.nombre ?? "--");
+      }
+
+      setAutorizado(true);
+    };
+
+    cargarVista();
+  }, [router]);
+
+  const cerrarSesion = async () => {
+    sessionStorage.removeItem("hackatonSession");
+    router.replace("/");
+  };
+
+  if (!autorizado) {
+    return null;
+  }
 
 
   return (
@@ -36,7 +101,7 @@ export default async function ClientePage() {
               Volver al inicio
             </Link>
             <h1 className="text-4xl font-black tracking-tight sm:text-5xl">
-              {`¡Bienvenido, ${usuario}!`}
+              {`¡Bienvenido, ${nombreUsuario}!`}
             </h1>
             <p className="max-w-3xl text-base leading-8 text-slate-300">
               Aqui tienes el resumen meteorologico del dia y recomendaciones de seguridad segun tu zona.
@@ -66,6 +131,16 @@ export default async function ClientePage() {
             </ul>
           </article>
         </section>
+
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={cerrarSesion}
+            className="rounded-full border border-slate-200 bg-white/70 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-white"
+          >
+            Cerrar sesion
+          </button>
+        </div>
       </div>
     </main>
   );

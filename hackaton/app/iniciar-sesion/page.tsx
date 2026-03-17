@@ -22,6 +22,7 @@ export default function IniciarSesionPage() {
 
     const formData = new FormData(form);
     const correo = String(formData.get("correo") ?? "").trim();
+    const contrasena = String(formData.get("contrasena") ?? "");
 
     setMensaje("");
     setCargando(true);
@@ -32,21 +33,32 @@ export default function IniciarSesionPage() {
       const snapshot = await getDocs(q);
 
       if (snapshot.empty) {
-        setMensaje("No existe una cuenta con ese correo.");
+        setMensaje("Correo o contraseña incorrectos.");
         return;
       }
 
-      const userDoc = snapshot.docs[0].data() as {
-        correo?: string;
-        nombre?: string;
-        tipoUsuario?: string;
-      };
+      const usuarioValido = snapshot.docs.find((documento) => {
+        const data = documento.data() as { contrasena?: string };
+        return data.contrasena === contrasena;
+      });
 
-      const tipoUsuario = userDoc.tipoUsuario === "Backoffice" ? "Backoffice" : "Cliente";
+      if (!usuarioValido) {
+        setMensaje("Correo o contraseña incorrectos.");
+        return;
+      }
+
+      const userDoc = usuarioValido.data() as { tipoUsuario?: string; nombre?: string; correo?: string };
+      if (userDoc.tipoUsuario !== "Cliente" && userDoc.tipoUsuario !== "Backoffice") {
+        setMensaje("El perfil no tiene un tipo de usuario válido.");
+        return;
+      }
+
+      const tipoUsuario = userDoc.tipoUsuario;
 
       sessionStorage.setItem(
         "hackatonSession",
         JSON.stringify({
+          usuarioId: usuarioValido.id,
           correo: userDoc.correo ?? correo,
           nombre: userDoc.nombre ?? "Usuario",
           tipoUsuario,

@@ -14,7 +14,7 @@ export default function BackofficePage() {
   const [autorizado, setAutorizado] = useState(false);
   const [nombreUsuario, setNombreUsuario] = useState("Usuario");
 
-  const cerrarSesion = () => {
+  const cerrarSesion = async () => {
     sessionStorage.removeItem("hackatonSession");
     router.replace("/");
   };
@@ -36,7 +36,8 @@ export default function BackofficePage() {
       setNombreUsuario(nombre || "Usuario");
       setAutorizado(true);
     } catch {
-      router.replace("/iniciar-sesion");
+      sessionStorage.removeItem("hackatonSession");
+        router.replace("/iniciar-sesion");
     }
   }, [router]);
 
