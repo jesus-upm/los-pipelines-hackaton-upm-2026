@@ -1,9 +1,28 @@
 import Link from "next/link";
 
+import {ServicioMeteorologia} from '@/lib/services/ServicioMeteorologia';
+import { IAData } from '@/lib/services/ServicioIA';
+import AICard from '@/lib/UI/AICard';
+import { Usuario } from "@/lib/models/Usuario";
+
 const usuario = "Lucia";
 const zona = "Madrid";
 
 export default function ClientePage() {
+
+  const rawData = await ServicioMeteorologia();
+
+
+  const dataIA: IAData = {
+    lugar: rawData.nombre,
+    tmed: rawData.tmed,
+    tmax: rawData.tmax,
+    tmin: rawData.tmin,
+    prec: rawData.prec,
+    humedadMedia: rawData.hrMedia,
+    usuario: Usuario =
+  };
+
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,_#f8fafc_0%,_#f0fdf4_45%,_#eff6ff_100%)] px-6 py-10 text-slate-900">
       <div className="mx-auto flex max-w-6xl flex-col gap-8">
@@ -22,16 +41,11 @@ export default function ClientePage() {
         </header>
 
         <section className="grid gap-6 md:grid-cols-2">
-          <article className="rounded-[2rem] border border-sky-200 bg-white/85 p-6 shadow-[0_15px_50px_rgba(15,23,42,0.08)]">
-            <p className="text-sm uppercase tracking-[0.18em] text-sky-700">Forecast del dia</p>
-            <h2 className="mt-3 text-3xl font-bold text-slate-950">{zona}</h2>
-            <div className="mt-5 rounded-2xl bg-sky-50 p-5">
-              <p className="text-sm text-slate-600">Temperatura</p>
-              <p className="mt-1 text-4xl font-black text-slate-950">18°C</p>
-              <p className="mt-2 text-sm text-slate-700">Cielos nubosos con lluvia debil por la tarde y viento moderado.</p>
-            </div>
-          </article>
-
+          
+                  
+          <WeatherCard data = {dataIA} />
+          <AICard data={dataIA} />
+          
           <article className="rounded-[2rem] border border-emerald-200 bg-white/85 p-6 shadow-[0_15px_50px_rgba(15,23,42,0.08)]">
             <p className="text-sm uppercase tracking-[0.18em] text-emerald-700">Recomendaciones de seguridad</p>
             <h2 className="mt-3 text-3xl font-bold text-slate-950">Zona: {zona}</h2>

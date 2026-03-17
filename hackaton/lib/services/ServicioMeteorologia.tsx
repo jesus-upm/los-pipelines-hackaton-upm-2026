@@ -1,3 +1,4 @@
+
 export const ServicioMeteorologia = async () => {
   try {
     const url = "http://ec2-54-171-51-31.eu-west-1.compute.amazonaws.com/weather";
@@ -22,3 +23,4 @@ export const ServicioMeteorologia = async () => {
     return null;
   }
 };
+
