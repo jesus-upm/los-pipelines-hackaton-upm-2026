@@ -4,15 +4,32 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useEffect } from "react";
+import ServicioMeteorologia from "@/lib/services/ServicioMeteorologia";
+import WeatherCard from "@/lib/UI/WeatherCard";
+import { IAData } from "@/lib/services/ServicioIA";
+import { TipoVivienda } from "@/lib/models/Usuario";
+import { db } from "@/lib/firebase";
+import { addDoc, collection, getDocs, query, updateDoc, where } from "firebase/firestore";
 
-const ubicacionesDisponibles = ["Madrid", "Barcelona", "Valencia", "Sevilla", "Malaga", "Bilbao"];
+const dataInicial: IAData = {
+  lugar: "--",
+  tmed: "--",
+  tmax: "--",
+  tmin: "--",
+  prec: "--",
+  humedadMedia: "--",
+  tipoVivienda: TipoVivienda.Piso,
+  necesidadesEspeciales: ""
+};
 
 export default function BackofficePage() {
   const router = useRouter();
-  const [ubicacionesAlerta, setUbicacionesAlerta] = useState<string[]>(["Madrid"]);
-  const [ubicacionesRecomendacion, setUbicacionesRecomendacion] = useState<string[]>(["Madrid"]);
   const [autorizado, setAutorizado] = useState(false);
   const [nombreUsuario, setNombreUsuario] = useState("Usuario");
+  const [dataIA, setDataIA] = useState<IAData>(dataInicial);
+  const [mensajeAlerta, setMensajeAlerta] = useState("");
+  const [guardandoAlerta, setGuardandoAlerta] = useState(false);
+  const [mensajeResultado, setMensajeResultado] = useState("");
 
   const cerrarSesion = async () => {
     sessionStorage.removeItem("hackatonSession");
@@ -20,35 +37,81 @@ export default function BackofficePage() {
   };
 
   useEffect(() => {
-    const sesionRaw = sessionStorage.getItem("hackatonSession");
-    if (!sesionRaw) {
-      router.replace("/iniciar-sesion");
+    const cargarBackoffice = async () => {
+      const sesionRaw = sessionStorage.getItem("hackatonSession");
+      if (!sesionRaw) {
+        router.replace("/iniciar-sesion");
+        return;
+      }
+
+      try {
+        const sesion = JSON.parse(sesionRaw) as { tipoUsuario?: string; nombre?: string };
+        if (sesion.tipoUsuario !== "Backoffice") {
+          router.replace("/cliente");
+          return;
+        }
+        const nombre = typeof sesion.nombre === "string" ? sesion.nombre.trim() : "";
+        setNombreUsuario(nombre || "Usuario");
+
+        const rawData = await ServicioMeteorologia();
+        if (rawData) {
+          setDataIA({
+            lugar: rawData.nombre ?? "--",
+            tmed: rawData.tmed ?? "--",
+            tmax: rawData.tmax ?? "--",
+            tmin: rawData.tmin ?? "--",
+            prec: rawData.prec ?? "--",
+            humedadMedia: rawData.hrMedia ?? "--",
+            tipoVivienda: TipoVivienda.Piso,
+            necesidadesEspeciales: ""
+          });
+        }
+
+        setAutorizado(true);
+      } catch {
+        sessionStorage.removeItem("hackatonSession");
+        router.replace("/iniciar-sesion");
+      }
+    };
+
+    cargarBackoffice();
+  }, [router]);
+
+  const emitirAlerta = async () => {
+    const mensaje = mensajeAlerta.trim();
+
+    if (!mensaje) {
+      setMensajeResultado("Debes escribir un mensaje de alerta.");
       return;
     }
 
-    try {
-      const sesion = JSON.parse(sesionRaw) as { tipoUsuario?: string; nombre?: string };
-      if (sesion.tipoUsuario !== "Backoffice") {
-        router.replace("/cliente");
-        return;
-      }
-      const nombre = typeof sesion.nombre === "string" ? sesion.nombre.trim() : "";
-      setNombreUsuario(nombre || "Usuario");
-      setAutorizado(true);
-    } catch {
-      sessionStorage.removeItem("hackatonSession");
-        router.replace("/iniciar-sesion");
-    }
-  }, [router]);
+    setGuardandoAlerta(true);
+    setMensajeResultado("");
 
-  const toggleUbicacion = (
-    ubicacion: string,
-    seleccionadas: string[],
-    setSeleccionadas: React.Dispatch<React.SetStateAction<string[]>>,
-  ) => {
-    setSeleccionadas((actuales) =>
-      actuales.includes(ubicacion) ? actuales.filter((item) => item !== ubicacion) : [...actuales, ubicacion],
-    );
+    try {
+      const alertasRef = collection(db, "alertas");
+      const activasQuery = query(alertasRef, where("activa", "==", true));
+      const activasSnap = await getDocs(activasQuery);
+
+      await Promise.all(
+        activasSnap.docs.map((docSnap) => updateDoc(docSnap.ref, { activa: false })),
+      );
+
+      await addDoc(alertasRef, {
+        mensaje,
+        emitidaPor: nombreUsuario,
+        emitidaEn: new Date().toISOString(),
+        activa: true,
+      });
+
+      setMensajeAlerta("");
+      setMensajeResultado("Alerta emitida y guardada correctamente.");
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      setMensajeResultado(`No se pudo guardar la alerta: ${msg}`);
+    } finally {
+      setGuardandoAlerta(false);
+    }
   };
 
   if (!autorizado) {
@@ -78,7 +141,11 @@ export default function BackofficePage() {
           </div>
         </header>
 
-        <section className="grid gap-6 lg:grid-cols-2">
+        <section>
+          <WeatherCard data={dataIA} />
+        </section>
+
+        <section>
           <section className="rounded-[2rem] border border-rose-200 bg-white/85 p-6 shadow-[0_15px_50px_rgba(15,23,42,0.08)]">
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -90,87 +157,27 @@ export default function BackofficePage() {
               </span>
             </div>
 
-            <div className="mt-5 grid gap-3 rounded-2xl bg-rose-50 p-4">
-              <p className="text-sm font-semibold text-slate-700">Selecciona una o varias ubicaciones</p>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {ubicacionesDisponibles.map((ubicacion) => (
-                  <label key={ubicacion} className="flex items-center gap-3 rounded-xl bg-white px-3 py-2 text-sm text-slate-700">
-                    <input
-                      type="checkbox"
-                      checked={ubicacionesAlerta.includes(ubicacion)}
-                      onChange={() => toggleUbicacion(ubicacion, ubicacionesAlerta, setUbicacionesAlerta)}
-                      className="h-4 w-4"
-                    />
-                    {ubicacion}
-                  </label>
-                ))}
-              </div>
-            </div>
-
             <label className="mt-5 grid gap-2 text-sm font-medium text-slate-700">
               Mensaje de alerta
               <textarea
                 rows={5}
                 placeholder="Escribe la alerta general que recibirán los clientes de las ubicaciones seleccionadas"
+                value={mensajeAlerta}
+                onChange={(event) => setMensajeAlerta(event.target.value)}
                 className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-rose-400 focus:bg-white"
               />
             </label>
 
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-              <p className="text-sm text-slate-600">
-                Destino: {ubicacionesAlerta.length > 0 ? ubicacionesAlerta.join(", ") : "sin ubicaciones seleccionadas"}
-              </p>
-              <button className="rounded-2xl bg-rose-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-rose-400">
-                Emitir alerta
-              </button>
-            </div>
-          </section>
+            {mensajeResultado ? <p className="mt-4 text-sm font-medium text-slate-700">{mensajeResultado}</p> : null}
 
-          <section className="rounded-[2rem] border border-emerald-200 bg-white/85 p-6 shadow-[0_15px_50px_rgba(15,23,42,0.08)]">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm uppercase tracking-[0.18em] text-emerald-700">Recomendaciones</p>
-                <h2 className="mt-2 text-3xl font-bold text-slate-950">Seguridad por zona</h2>
-              </div>
-              <span className="rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-900">
-                Personalizable
-              </span>
-            </div>
-
-            <div className="mt-5 grid gap-3 rounded-2xl bg-emerald-50 p-4">
-              <p className="text-sm font-semibold text-slate-700">Selecciona una o varias ubicaciones</p>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {ubicacionesDisponibles.map((ubicacion) => (
-                  <label key={ubicacion} className="flex items-center gap-3 rounded-xl bg-white px-3 py-2 text-sm text-slate-700">
-                    <input
-                      type="checkbox"
-                      checked={ubicacionesRecomendacion.includes(ubicacion)}
-                      onChange={() =>
-                        toggleUbicacion(ubicacion, ubicacionesRecomendacion, setUbicacionesRecomendacion)
-                      }
-                      className="h-4 w-4"
-                    />
-                    {ubicacion}
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <label className="mt-5 grid gap-2 text-sm font-medium text-slate-700">
-              Recomendaciones de seguridad
-              <textarea
-                rows={5}
-                placeholder="Define recomendaciones que se enviarán a los clientes de las zonas seleccionadas"
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-emerald-400 focus:bg-white"
-              />
-            </label>
-
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-              <p className="text-sm text-slate-600">
-                Destino: {ubicacionesRecomendacion.length > 0 ? ubicacionesRecomendacion.join(", ") : "sin ubicaciones seleccionadas"}
-              </p>
-              <button className="rounded-2xl bg-emerald-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-400">
-                Publicar recomendaciones
+            <div className="mt-5 flex flex-wrap items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={emitirAlerta}
+                disabled={guardandoAlerta}
+                className="rounded-2xl bg-rose-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {guardandoAlerta ? "Emitiendo..." : "Emitir alerta"}
               </button>
             </div>
           </section>

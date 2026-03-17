@@ -14,48 +14,46 @@ export default function WeatherCard(dataProps : AICardProps) {
   const humedad = data.humedadMedia; // "70"
 
   return (
-    <section className="grid gap-6 md:grid-cols-2">
-      <article className="rounded-[2rem] border border-sky-200 bg-white/85 p-6 shadow-[0_15px_50px_rgba(15,23,42,0.08)]">
-        <div className="flex justify-between items-start">
+    <article className="rounded-[2rem] border border-sky-200 bg-white/85 p-6 shadow-[0_15px_50px_rgba(15,23,42,0.08)]">
+      <div className="flex justify-between items-start">
+        <div>
+          <p className="text-sm uppercase tracking-[0.18em] text-sky-700 font-medium">Forecast del día</p>
+          <h2 className="mt-3 text-3xl font-bold text-slate-950">{ciudad}</h2>
+        </div>
+        <span className="px-3 py-1 bg-sky-100 text-sky-700 rounded-full text-xs font-bold">
+          {data.lugar}
+        </span>
+      </div>
+
+      <div className="mt-5 rounded-2xl bg-sky-50 p-5">
+        <div className="flex justify-between items-end">
           <div>
-            <p className="text-sm uppercase tracking-[0.18em] text-sky-700 font-medium">Forecast del día</p>
-            <h2 className="mt-3 text-3xl font-bold text-slate-950">{ciudad}</h2>
+            <p className="text-sm text-slate-600">Temp. Media</p>
+            <p className="mt-1 text-5xl font-black text-slate-950">
+              {tempActual}°C
+            </p>
           </div>
-          <span className="px-3 py-1 bg-sky-100 text-sky-700 rounded-full text-xs font-bold">
-            {data.lugar}
-          </span>
-        </div>
-
-        <div className="mt-5 rounded-2xl bg-sky-50 p-5">
-          <div className="flex justify-between items-end">
-            <div>
-              <p className="text-sm text-slate-600">Temp. Media</p>
-              <p className="mt-1 text-5xl font-black text-slate-950">
-                {tempActual}°C
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-slate-500 font-bold uppercase">Lluvia</p>
-              <p className="text-lg font-bold text-sky-600">{lluvia} mm</p>
-            </div>
-          </div>
-
-          <div className="mt-4 pt-4 border-t border-sky-100 flex justify-between">
-            <div>
-              <p className="text-[10px] uppercase text-slate-400 font-bold">Máxima</p>
-              <p className="text-sm font-bold text-red-500">{tempMax}°C</p>
-            </div>
-            <div className="text-center">
-              <p className="text-[10px] uppercase text-slate-400 font-bold">Mínima</p>
-              <p className="text-sm font-bold text-blue-500">{tempMin}°C</p>
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] uppercase text-slate-400 font-bold">Humedad</p>
-              <p className="text-sm font-bold text-slate-700">{humedad}%</p>
-            </div>
+          <div className="text-right">
+            <p className="text-xs text-slate-500 font-bold uppercase">Lluvia</p>
+            <p className="text-lg font-bold text-sky-600">{lluvia} mm</p>
           </div>
         </div>
-      </article>
-    </section>
+
+        <div className="mt-4 pt-4 border-t border-sky-100 flex justify-between">
+          <div>
+            <p className="text-[10px] uppercase text-slate-400 font-bold">Máxima</p>
+            <p className="text-sm font-bold text-red-500">{tempMax}°C</p>
+          </div>
+          <div className="text-center">
+            <p className="text-[10px] uppercase text-slate-400 font-bold">Mínima</p>
+            <p className="text-sm font-bold text-blue-500">{tempMin}°C</p>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] uppercase text-slate-400 font-bold">Humedad</p>
+            <p className="text-sm font-bold text-slate-700">{humedad}%</p>
+          </div>
+        </div>
+      </div>
+    </article>
   );
 }

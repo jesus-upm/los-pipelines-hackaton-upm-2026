@@ -9,6 +9,8 @@ import { IAData } from "@/lib/services/ServicioIA";
 import AICard from "@/lib/UI/AICard";
 import WeatherCard from "@/lib/UI/WeatherCard";
 import { TipoVivienda } from "@/lib/models/Usuario";
+import { db } from "@/lib/firebase";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
 
 const dataInicial: IAData = {
   lugar: "--",
@@ -27,6 +29,11 @@ export default function ClientePage() {
   const [nombreUsuario, setNombreUsuario] = useState("Usuario");
   const [zona, setZona] = useState("--");
   const [dataIA, setDataIA] = useState<IAData>(dataInicial);
+  const [alertaActiva, setAlertaActiva] = useState<{
+    mensaje: string;
+    emitidaEn: string;
+    emitidaPor: string;
+  } | null>(null);
 
   useEffect(() => {
     const cargarVista = async () => {
@@ -82,6 +89,45 @@ export default function ClientePage() {
     cargarVista();
   }, [router]);
 
+  useEffect(() => {
+    const alertasRef = collection(db, "alertas");
+    const alertasActivasQuery = query(alertasRef, where("activa", "==", true));
+
+    const unsub = onSnapshot(alertasActivasQuery, (snapshot) => {
+      if (snapshot.empty) {
+        setAlertaActiva(null);
+        return;
+      }
+
+      const alertas = snapshot.docs.map((docSnap) => {
+        const data = docSnap.data() as {
+          mensaje?: string;
+          emitidaEn?: string;
+          emitidaPor?: string;
+        };
+
+        return {
+          mensaje: data.mensaje ?? "",
+          emitidaEn: data.emitidaEn ?? "",
+          emitidaPor: data.emitidaPor ?? "Backoffice",
+        };
+      });
+
+      const ultimaAlerta = alertas.reduce((acumulada, actual) =>
+        (actual.emitidaEn || "") > (acumulada.emitidaEn || "") ? actual : acumulada,
+      );
+
+      if (!ultimaAlerta.mensaje) {
+        setAlertaActiva(null);
+        return;
+      }
+
+      setAlertaActiva(ultimaAlerta);
+    });
+
+    return () => unsub();
+  }, []);
+
   const cerrarSesion = async () => {
     sessionStorage.removeItem("hackatonSession");
     router.replace("/");
@@ -110,27 +156,21 @@ export default function ClientePage() {
         </header>
 
         <section className="grid gap-6 md:grid-cols-2">
-          
-                  
+             
           <WeatherCard data = {dataIA} />
           <AICard data={dataIA} />
           
-          <article className="rounded-[2rem] border border-emerald-200 bg-white/85 p-6 shadow-[0_15px_50px_rgba(15,23,42,0.08)]">
-            <p className="text-sm uppercase tracking-[0.18em] text-emerald-700">Recomendaciones de seguridad</p>
-            <h2 className="mt-3 text-3xl font-bold text-slate-950">Zona: {zona}</h2>
-            <ul className="mt-5 grid gap-3">
-              <li className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-slate-700">
-                Lleva paraguas y evita zonas con acumulacion de agua en horas punta.
-              </li>
-              <li className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-slate-700">
-                Si te desplazas en coche, reduce la velocidad y aumenta la distancia de seguridad.
-              </li>
-              <li className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-slate-700">
-                Mantente atento a posibles avisos oficiales durante la tarde.
-              </li>
-            </ul>
-          </article>
         </section>
+
+        {alertaActiva ? (
+          <section className="rounded-[2rem] border border-rose-300 bg-rose-50 p-6 shadow-[0_15px_50px_rgba(15,23,42,0.08)]">
+            <p className="text-sm uppercase tracking-[0.18em] text-rose-700">Alerta activa</p>
+            <p className="mt-3 text-2xl font-bold text-slate-950">{alertaActiva.mensaje}</p>
+            <p className="mt-3 text-xs text-slate-500">
+              Emitida por {alertaActiva.emitidaPor} · {alertaActiva.emitidaEn || "sin fecha"}
+            </p>
+          </section>
+        ) : null}
 
         <div className="flex justify-end">
           <button
