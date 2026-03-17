@@ -1,29 +1,38 @@
-"use client";
-
 import Link from "next/link";
 
+import {ServicioMeteorologia} from '@/lib/services/ServicioMeteorologia';
+import { IAData } from '@/lib/services/ServicioIA';
+import AICard from '@/lib/UI/AICard';
+import { Usuario } from "@/lib/models/Usuario";
+
+const usuario = "Lucia";
 const zona = "Madrid";
 
 export default function ClientePage() {
+
+  const rawData = await ServicioMeteorologia();
+
+
+  const dataIA: IAData = {
+    lugar: rawData.nombre,
+    tmed: rawData.tmed,
+    tmax: rawData.tmax,
+    tmin: rawData.tmin,
+    prec: rawData.prec,
+    humedadMedia: rawData.hrMedia,
+    usuario: Usuario = 
+  };
+
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,_#f8fafc_0%,_#f0fdf4_45%,_#eff6ff_100%)] px-6 py-10 text-slate-900">
       <div className="mx-auto flex max-w-6xl flex-col gap-8">
         <header className="rounded-[2rem] bg-slate-950 px-8 py-7 text-white shadow-[0_25px_80px_rgba(15,23,42,0.22)]">
           <div className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <Link href="/" className="text-sm text-slate-300 transition hover:text-white">
-                Volver al inicio
-              </Link>
-              <button
-                type="button"
-                onClick={cerrarSesion}
-                className="rounded-full border border-white/25 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
-              >
-                Cerrar sesion
-              </button>
-            </div>
+            <Link href="/" className="text-sm text-slate-300 transition hover:text-white">
+              Volver al inicio
+            </Link>
             <h1 className="text-4xl font-black tracking-tight sm:text-5xl">
-              {`¡Bienvenido, ${nombreUsuario}!`}
+              {`¡Bienvenido, ${usuario}!`}
             </h1>
             <p className="max-w-3xl text-base leading-8 text-slate-300">
               Aqui tienes el resumen meteorologico del dia y recomendaciones de seguridad segun tu zona.
