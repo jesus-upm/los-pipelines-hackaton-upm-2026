@@ -9,7 +9,7 @@ import WeatherCard from "@/lib/UI/WeatherCard";
 import { IAData } from "@/lib/services/ServicioIA";
 import { TipoVivienda } from "@/lib/models/Usuario";
 import { db } from "@/lib/firebase";
-import { addDoc, collection, getDocs, query, updateDoc, where } from "firebase/firestore";
+import { addDoc, collection, getDocs, query, updateDoc, where, onSnapshot } from "firebase/firestore";
 
 const dataInicial: IAData = {
   lugar: "--",
@@ -30,6 +30,13 @@ export default function BackofficePage() {
   const [mensajeAlerta, setMensajeAlerta] = useState("");
   const [guardandoAlerta, setGuardandoAlerta] = useState(false);
   const [mensajeResultado, setMensajeResultado] = useState("");
+  const [alertaActiva, setAlertaActiva] = useState<{
+    id: string;
+    mensaje: string;
+    emitidaEn: string;
+    emitidaPor: string;
+  } | null>(null);
+  const [desactivando, setDesactivando] = useState(false);
 
   const cerrarSesion = async () => {
     sessionStorage.removeItem("hackatonSession");
@@ -77,6 +84,34 @@ export default function BackofficePage() {
     cargarBackoffice();
   }, [router]);
 
+  useEffect(() => {
+    const alertasRef = collection(db, "alertas");
+    const alertasActivasQuery = query(alertasRef, where("activa", "==", true));
+
+    const unsub = onSnapshot(alertasActivasQuery, (snapshot) => {
+      if (snapshot.empty) {
+        setAlertaActiva(null);
+        return;
+      }
+
+      const primerDoc = snapshot.docs[0];
+      const data = primerDoc.data() as {
+        mensaje?: string;
+        emitidaEn?: string;
+        emitidaPor?: string;
+      };
+
+      setAlertaActiva({
+        id: primerDoc.id,
+        mensaje: data.mensaje ?? "",
+        emitidaEn: data.emitidaEn ?? "",
+        emitidaPor: data.emitidaPor ?? "Backoffice",
+      });
+    });
+
+    return () => unsub();
+  }, []);
+
   const emitirAlerta = async () => {
     const mensaje = mensajeAlerta.trim();
 
@@ -114,6 +149,30 @@ export default function BackofficePage() {
     }
   };
 
+  const desactivarAlerta = async () => {
+    if (!alertaActiva) return;
+
+    setDesactivando(true);
+    try {
+      const alertasRef = collection(db, "alertas");
+      const docRef = alertasRef.parent?.path ? await getDocs(query(alertasRef, where("__name__", "==", alertaActiva.id))) : null;
+      
+      const alertasQuery = query(alertasRef, where("activa", "==", true));
+      const activasSnap = await getDocs(alertasQuery);
+      
+      const alertaDoc = activasSnap.docs.find((doc) => doc.id === alertaActiva.id);
+      if (alertaDoc) {
+        await updateDoc(alertaDoc.ref, { activa: false });
+        setMensajeResultado("Alerta desactivada correctamente.");
+      }
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      setMensajeResultado(`Error al desactivar: ${msg}`);
+    } finally {
+      setDesactivando(false);
+    }
+  };
+
   if (!autorizado) {
     return null;
   }
@@ -141,12 +200,36 @@ export default function BackofficePage() {
           </div>
         </header>
 
-        <section>
-          <WeatherCard data={dataIA} />
-        </section>
+        {alertaActiva && (
+          <section className="rounded-[2rem] border-4 border-red-500 bg-gradient-to-r from-red-50 to-orange-50 p-6 shadow-[0_0_30px_rgba(239,68,68,0.3)]">
+            <div className="space-y-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-bold uppercase tracking-[0.2em] text-red-700">⚠️ Alerta activa en el sistema</p>
+                  <p className="mt-3 text-2xl font-black text-red-900">{alertaActiva.mensaje}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={desactivarAlerta}
+                  disabled={desactivando}
+                  className="whitespace-nowrap rounded-2xl bg-red-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {desactivando ? "Desactivando..." : "Desactivar"}
+                </button>
+              </div>
+              <p className="text-xs text-slate-600">
+                Emitida por {alertaActiva.emitidaPor} · {alertaActiva.emitidaEn || "sin fecha"}
+              </p>
+            </div>
+          </section>
+        )}
 
-        <section>
-          <section className="rounded-[2rem] border border-rose-200 bg-white/85 p-6 shadow-[0_15px_50px_rgba(15,23,42,0.08)]">
+        <section className="grid gap-6 md:grid-cols-2">
+          <div>
+            <WeatherCard data={dataIA} />
+          </div>
+
+          <div className="rounded-[2rem] border border-rose-200 bg-white/85 p-6 shadow-[0_15px_50px_rgba(15,23,42,0.08)]">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm uppercase tracking-[0.18em] text-rose-700">Emision de alertas</p>
@@ -161,7 +244,7 @@ export default function BackofficePage() {
               Mensaje de alerta
               <textarea
                 rows={5}
-                placeholder="Escribe la alerta general que recibirán los clientes de las ubicaciones seleccionadas"
+                placeholder="Escribe la alerta general que recibirán todos los clientes"
                 value={mensajeAlerta}
                 onChange={(event) => setMensajeAlerta(event.target.value)}
                 className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-rose-400 focus:bg-white"
@@ -180,7 +263,7 @@ export default function BackofficePage() {
                 {guardandoAlerta ? "Emitiendo..." : "Emitir alerta"}
               </button>
             </div>
-          </section>
+          </div>
         </section>
 
         <div className="flex justify-end">

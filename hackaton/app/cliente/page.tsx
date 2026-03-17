@@ -141,6 +141,18 @@ export default function ClientePage() {
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,_#f8fafc_0%,_#f0fdf4_45%,_#eff6ff_100%)] px-6 py-10 text-slate-900">
       <div className="mx-auto flex max-w-6xl flex-col gap-8">
+        {alertaActiva && (
+          <section className="rounded-[2rem] border-4 border-red-700 bg-gradient-to-r from-red-600 via-red-500 to-orange-600 p-8 shadow-[0_0_80px_rgba(220,38,38,0.8),0_0_40px_rgba(220,38,38,0.5)] ring-4 ring-red-300">
+            <div className="space-y-4 text-center">
+              <p className="text-3xl font-black uppercase tracking-[0.4em] text-white drop-shadow-2xl">🚨 ¡ALERTA GENERAL! 🚨</p>
+              <p className="text-4xl font-black text-white drop-shadow-2xl">{alertaActiva.mensaje}</p>
+              <p className="text-base font-bold text-white drop-shadow-lg">
+                ⚠️ Emitida por {alertaActiva.emitidaPor}
+              </p>
+            </div>
+          </section>
+        )}
+
         <header className="rounded-[2rem] bg-slate-950 px-8 py-7 text-white shadow-[0_25px_80px_rgba(15,23,42,0.22)]">
           <div className="space-y-4">
             <Link href="/" className="text-sm text-slate-300 transition hover:text-white">
@@ -156,21 +168,11 @@ export default function ClientePage() {
         </header>
 
         <section className="grid gap-6 md:grid-cols-2">
-             
           <WeatherCard data = {dataIA} />
           <AICard data={dataIA} />
-          
         </section>
 
-        {alertaActiva ? (
-          <section className="rounded-[2rem] border border-rose-300 bg-rose-50 p-6 shadow-[0_15px_50px_rgba(15,23,42,0.08)]">
-            <p className="text-sm uppercase tracking-[0.18em] text-rose-700">Alerta activa</p>
-            <p className="mt-3 text-2xl font-bold text-slate-950">{alertaActiva.mensaje}</p>
-            <p className="mt-3 text-xs text-slate-500">
-              Emitida por {alertaActiva.emitidaPor} · {alertaActiva.emitidaEn || "sin fecha"}
-            </p>
-          </section>
-        ) : null}
+
 
         <div className="flex justify-end">
           <button

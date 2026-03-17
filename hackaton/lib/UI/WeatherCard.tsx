@@ -20,9 +20,6 @@ export default function WeatherCard(dataProps : AICardProps) {
           <p className="text-sm uppercase tracking-[0.18em] text-sky-700 font-medium">Forecast del día</p>
           <h2 className="mt-3 text-3xl font-bold text-slate-950">{ciudad}</h2>
         </div>
-        <span className="px-3 py-1 bg-sky-100 text-sky-700 rounded-full text-xs font-bold">
-          {data.lugar}
-        </span>
       </div>
 
       <div className="mt-5 rounded-2xl bg-sky-50 p-5">
