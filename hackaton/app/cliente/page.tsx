@@ -11,6 +11,7 @@ import WeatherCard from "@/lib/UI/WeatherCard";
 import { TipoVivienda } from "@/lib/models/Usuario";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
+import AlertasHistorial from "@/lib/UI/AlertasHistorial";
 
 const dataInicial: IAData = {
   lugar: "--",
@@ -154,16 +155,25 @@ export default function ClientePage() {
         )}
 
         <header className="rounded-[2rem] bg-slate-950 px-8 py-7 text-white shadow-[0_25px_80px_rgba(15,23,42,0.22)]">
-          <div className="space-y-4">
-            <Link href="/" className="text-sm text-slate-300 transition hover:text-white">
-              Volver al inicio
-            </Link>
-            <h1 className="text-4xl font-black tracking-tight sm:text-5xl">
-              {`¡Bienvenido, ${nombreUsuario}!`}
-            </h1>
-            <p className="max-w-3xl text-base leading-8 text-slate-300">
-              Aqui tienes el resumen meteorologico del dia y recomendaciones de seguridad segun tu zona.
-            </p>
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-4">
+              <Link href="/" className="text-sm text-slate-300 transition hover:text-white">
+                Volver al inicio
+              </Link>
+              <h1 className="text-4xl font-black tracking-tight sm:text-5xl">
+                {`¡Bienvenido, ${nombreUsuario}!`}
+              </h1>
+              <p className="max-w-3xl text-base leading-8 text-slate-300">
+                Aqui tienes el resumen meteorologico del dia y recomendaciones de seguridad segun tu zona.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={cerrarSesion}
+              className="mt-1 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-500 whitespace-nowrap"
+            >
+              Cerrar sesion
+            </button>
           </div>
         </header>
 
@@ -174,15 +184,7 @@ export default function ClientePage() {
 
 
 
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={cerrarSesion}
-            className="rounded-full border border-slate-200 bg-white/70 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-white"
-          >
-            Cerrar sesion
-          </button>
-        </div>
+        <AlertasHistorial />
       </div>
     </main>
   );

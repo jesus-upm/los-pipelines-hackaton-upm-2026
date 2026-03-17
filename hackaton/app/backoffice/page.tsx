@@ -6,6 +6,8 @@ import { useState } from "react";
 import { useEffect } from "react";
 import ServicioMeteorologia from "@/lib/services/ServicioMeteorologia";
 import WeatherCard from "@/lib/UI/WeatherCard";
+import BackofficeAICard from "@/lib/UI/BackofficeAICard";
+import AlertasHistorial from "@/lib/UI/AlertasHistorial";
 import { IAData } from "@/lib/services/ServicioIA";
 import { TipoVivienda } from "@/lib/models/Usuario";
 import { db } from "@/lib/firebase";
@@ -194,9 +196,18 @@ export default function BackofficePage() {
             </p>
           </div>
 
-          <div className="rounded-[1.5rem] bg-white/10 px-5 py-4">
-            <p className="text-sm text-slate-300">Responsable activo</p>
-            <p className="mt-1 text-2xl font-bold">{nombreUsuario}</p>
+          <div className="flex flex-col items-end gap-4">
+            <button
+              type="button"
+              onClick={cerrarSesion}
+              className="rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-500"
+            >
+              Cerrar sesion
+            </button>
+            <div className="rounded-[1.5rem] bg-white/10 px-5 py-4">
+              <p className="text-sm text-slate-300">Responsable activo</p>
+              <p className="mt-1 text-2xl font-bold">{nombreUsuario}</p>
+            </div>
           </div>
         </header>
 
@@ -224,12 +235,16 @@ export default function BackofficePage() {
           </section>
         )}
 
-        <section className="grid gap-6 md:grid-cols-2">
-          <div>
-            <WeatherCard data={dataIA} />
+        <section>
+          <WeatherCard data={dataIA} />
+        </section>
+
+        <section className="grid gap-6 md:grid-cols-2 md:items-stretch">
+          <div className="flex flex-col">
+            <BackofficeAICard data={dataIA} />
           </div>
 
-          <div className="rounded-[2rem] border border-rose-200 bg-white/85 p-6 shadow-[0_15px_50px_rgba(15,23,42,0.08)]">
+          <div className="flex flex-col rounded-[2rem] border border-rose-200 bg-white/85 p-6 shadow-[0_15px_50px_rgba(15,23,42,0.08)]">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm uppercase tracking-[0.18em] text-rose-700">Emision de alertas</p>
@@ -266,15 +281,7 @@ export default function BackofficePage() {
           </div>
         </section>
 
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={cerrarSesion}
-            className="rounded-full border border-slate-200 bg-white/70 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-white"
-          >
-            Cerrar sesion
-          </button>
-        </div>
+        <AlertasHistorial />
       </div>
     </main>
   );
