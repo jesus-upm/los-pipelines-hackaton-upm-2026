@@ -157,10 +157,10 @@ export default function RegistroPage() {
             </span>
             <div className="space-y-4">
               <h1 className="text-4xl font-black tracking-tight sm:text-5xl">
-                Crea tu cuenta y prepara tu espacio de compra.
+                Crea tu cuenta y ten acceso a toda la información.
               </h1>
               <p className="max-w-lg text-base leading-8 text-slate-300">
-                Estos datos serán utilizados para personalizar tu experiencia, ofrecer recomendaciones relevantes y garantizar tu seguridad.
+                Estos datos serán utilizados para personalizar tu experiencia, ofrecer información relevante y garantizar tu seguridad.
               </p>
             </div>
           </div>
@@ -318,7 +318,7 @@ export default function RegistroPage() {
                 className="mt-1 h-4 w-4 rounded border-slate-300"
               />
               <span>
-                Acepto los terminos del servicio y autorizo el uso de mis datos para la gestion de pedidos y comunicaciones.
+                Acepto los terminos del servicio y autorizo el uso de mis datos para el envío de alertas relevantes.
               </span>
             </label>
 
