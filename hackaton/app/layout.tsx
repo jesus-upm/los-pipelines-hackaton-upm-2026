@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tienda UPM",
+  title: "App medioambiente",
   description: "Pantallas base para acceso y gestión de usuarios",
 };
 
