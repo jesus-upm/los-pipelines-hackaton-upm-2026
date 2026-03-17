@@ -1,8 +1,8 @@
 // components/AICard.tsx
 import { IAData, ServicioMeteorologiaPrompt } from "@/lib/services/ServicioIA"; // Ajusta la ruta a tu archivo de tipos
+import AiCardProps from "@/lib/services/ServicioIA"
 
-
-export default async function AICard(data : IAData) {
+export default async function AICard(data : AICardProps) {
   const url = "http://ec2-54-171-51-31.eu-west-1.compute.amazonaws.com/prompt";
   const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJqZXN1cyIsImV4cCI6MTc3MzgyMzM4MH0.m2YZVsFSXmhVOE54h_yMdiugogfHDifC2pvAghmin6o"; // Considera mover esto a .env
 

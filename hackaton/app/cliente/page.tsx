@@ -1,14 +1,16 @@
 import Link from "next/link";
 
-import {ServicioMeteorologia} from '@/lib/services/ServicioMeteorologia';
+import ServicioMeteorologia from '@/lib/services/ServicioMeteorologia';
 import { IAData } from '@/lib/services/ServicioIA';
 import AICard from '@/lib/UI/AICard';
-import { Usuario } from "@/lib/models/Usuario";
+import WeatherCard from "@/lib/UI/WeatherCard";
+import { TipoVivienda, Usuario } from "@/lib/models/Usuario";
 
 const usuario = "Lucia";
 const zona = "Madrid";
 
-export default function ClientePage() {
+
+export default async function ClientePage() {
 
   const rawData = await ServicioMeteorologia();
 
@@ -20,8 +22,10 @@ export default function ClientePage() {
     tmin: rawData.tmin,
     prec: rawData.prec,
     humedadMedia: rawData.hrMedia,
-    usuario: Usuario = 
-  };
+    tipoVivienda: TipoVivienda.Caravana,
+    necesidadesEspeciales: "Movilidad reducida y sensibilidad al frío"
+    }
+
 
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,_#f8fafc_0%,_#f0fdf4_45%,_#eff6ff_100%)] px-6 py-10 text-slate-900">

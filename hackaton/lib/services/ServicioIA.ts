@@ -7,8 +7,13 @@ export interface IAData {
   tmin: string; // Temperatura mínima
   prec: string; // Precipitación
   humedadMedia: string; // Humedad relativa media
-  usuario: Usuario;
+  tipoVivienda: TipoVivienda;
+  necesidadesEspeciales: string;
   // Agrega más campos si son relevantes para el prompt de la IA
+}
+
+interface AICardProps {
+  data: IAData; // Aquí le decimos que recibirá una prop llamada 'data'
 }
 
 export const ServicioMeteorologiaPrompt = async (systemPrompt: String, userPrompt: String) => {
